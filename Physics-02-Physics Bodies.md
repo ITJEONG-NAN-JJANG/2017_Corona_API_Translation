@@ -163,7 +163,7 @@ physics.addBody( object, "static",
 )
 ~~~
 
- 각각의 body 요소가 모양을 정의하면서 충돌이나 바운스 등의 고유한 물리적 특성을 가질 수 있다. 아래는 예시입니다:
+ 각각의 body 요소가 모양을 정의하면서 충돌이나 바운스 등의 고유한 물리적 특성을 가질 수 있습니다. 아래는 예시입니다:
 
 ~~~
 local car = display.newImage( "car.png" )
@@ -180,14 +180,83 @@ physics.addBody( car, "dynamic",
 
 ### Offset/Angled Rectangular Bodies
 
- 만약 
+ 만약 display object의 전체를 포함하지 않는 사각형 모양의 body 요소를 만들고 싶다면, `box`파라미터와 원하는 특정한 키-값 쌍을 지정하여 정의할 수 있습니다. 이 body의 종류는 또한 display object의 중심에서 offset되거나 `0`이외의 각도(회전)으로 설정됩니다.
+
+ * `halfwidth`- body 너비의 반절. 필수적인 속성.
+ * `halfHeight` - body 높이의 반절. 필수적인 속성.
+ * `x` - display object 중심에서의 x offset(±). 부가적인 속성이며, 기본 값은 `0`.
+ * `y` - display object 중심에서의 y offset(±). 부가적인 속성이며, 기본 값은 `0`.
+ * `angle` - body의 각도(회전). 부가적인 속성이며, 기본 값은 `0`.
+
+ ~~~
+local body = display.newRect( 100, 200, 40, 40 )
+
+local offsetRectParams = { halfWidth = 5, halfHeight = 10, x = 10, y = 0, angle = 60 }
+
+physics.addBody( body, "dynamic", { box = offsetRectParams } )
+~~~
 
 ### Edge Shape (Chain) Body
 
+edge shape(chain)의 body는 `체인` 테이블의 verticle들을 통해 정의됩니다. 엣지 형태는 polygonal body들과 같은 볼록한 각도로 제한되지는 않습니다.
+
+추가적으로, boolean 타입의 `connectFirstAndLastChainVertext` 속성을 사용하여 체인의 처음과 끝을 연결할 수 있습니다. `true`로 설정하면, 처음과 끝 점이 직선으로 연결됩니다. `fase`(기본값)로 설정하면, edge shape의 가장자리 모양이 끊어질 수 있습니다.
+
+~~~
+local body = display.newRect( 150, 200, 40, 40 )
+
+physics.addBody( body, "static",
+    {
+        chain={ -120,-140, -100,-90, -80,-60, -40,-20, 0,0, 40,0, 70,-10, 110,-20, 140,-20, 180,-10 },
+        connectFirstAndLastChainVertex = true
+    }
+)
+~~~
+
+> **중요**
+> 교차하는 부분이 있는 edge shape body는 구성할 수 없습니다. - 바꾸어 말하면, 당신이 선언한 점들은 어떠한 다른 요소들과도 접점을 만들 수 없습니다. 그렇게 되면, 많은 충돌 탐지 시도를 중단시킬 수 있습니다.
+
+
 ### Outline Bodies
 
+만약 더욱 복잡한 display object를 위한 특정한 body의 형상이나 다중 요소 body 선언하고 싶지 않더라도, Corona는 *graphics.newOutline()* 함수를 통해 자동적으로 display object의 외곽선을 설정해줍니다. Outlined body들은 polygonal body들에 비해 더욱 적은 제약 사항을 가집니다. 예를 들어, outlined body의 모양은 볼록할 수도, 오목할 수도 있습니다.
+
+~~~
+local image_name = "star.png"
+ 
+local image_outline = graphics.newOutline( 2, image_name )
+ 
+local image_star = display.newImageRect( image_name )
+ 
+physics.addBody( image_star, { outline=image_outline } )
+~~~
+
 ## Destroying Bodies
+    
+Physical body들은 *object:removeSelf()*나 *display.remove()*등을 사용하여, 다른 display object들처럼 파괴될 수 있습니다. 이러한 경우에, 물체는 화면에서 사라질 뿐만 아니라, 물리적 시뮬레이션(physical body의 데이터도 제거됩니다) 모두에서 제거됩니다.
 
+~~~
+object:removeSelf()
+--OR:
+display.remove( object )
+~~~
 
+그 대신에, *physics.removeBody()*를 사용하여 화면에서는 보이게 유지하며 physical body만 삭제할 수 있습니다.
+
+~~~
+physics.removeBody( object )
+~~~
+
+> **메모**
+> 두 가지의 경우에, Box2D의 body는 현재의 스텝이 끝날 때가지 안전히 보관될 것입니다. 그러나, Lua 참조에서는 즉시 삭제됩니다. 그러므로, 여러 오류들을 피하기 위해 복합적인 Lua Object를 지워야 합니다.
+> ~~~
+>local function onCollision( self, event )
+> 
+>    if ( event.phase == "began" ) then
+>        display.remove( crate1 )
+>        crate1 = nil
+>    end
+>end
+>~~~
 
 ###### © 2017 Corona Labs Inc. All Rights Reserved. (Last updated: 17-May-2017)
